@@ -4,6 +4,7 @@ BUILDID=$1
 BRANCH=$2
 LAYERS=$3
 OVERRIDES=$4
+ISSUE=$5
 
 function setup_oe() {
 
@@ -62,6 +63,13 @@ IFS=$OIFS
 }
 
 umask 0022
+#It is against policy to set both $ISSUE and $OVERRIDES in the buildbot ui
+if [[ $ISSUE != 'None' && $OVERRIDES == 'None' ]]; then
+    OVERRIDES=$( ./build_for_issue.sh $ISSUE )
+else
+    echo "Cannot pass both a Jira ticket and custom repository overrides to build from."
+    exit -1
+fi
 cd build
 #Extra case for openxt override
 setup_oxt
@@ -87,8 +95,7 @@ BRANCH=$BRANCH
 EOF
 setup_oe
 ./do_build.sh -i $BUILDID -s setupoe,sync_cache
-if [[ $LAYERS != 'None' ]];
-then
+if [[ $LAYERS != 'None' ]]; then
 	../../engage_layers.sh $LAYERS
 fi
 ../../engage_srcrevs.sh $BRANCH $OVERRIDES
