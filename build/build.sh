@@ -15,6 +15,7 @@ then
 	do
 		REPO_NAME=`echo $pair | cut -f 1 -d ':'`
 		REPO_GIT=`echo $pair | cut -f 2 -d ':'`
+		REPO_BRANCH=`echo $pair | cut -f 3 -d ':'`
 		if [[ $REPO_NAME == "xenclient-oe" ]];
 		then
 			echo "Overrwriting for xenclient-oe"
@@ -24,7 +25,7 @@ EXTRA_REPO=file:///home/build/builder/build/git/xenclient-oe-extra.git
 EXTRA_DIR=extra
 EXTRA_TAG="master"
 XENCLIENT_REPO=git://$REPO_GIT/xenclient-oe.git
-XENCLIENT_TAG="master"
+XENCLIENT_TAG="$REPO_BRANCH"
 EOF
 		fi
 	done
@@ -44,15 +45,17 @@ then
 	do
 		REPO_NAME=`echo $pair | cut -f 1 -d ':'`
 		REPO_GIT=`echo $pair | cut -f 2 -d ':'`
+		REPO_BRANCH=`echo $pair | cut -f 3 -d ':'`
 		if [[ $REPO_NAME == "openxt" ]];
 		then
-			git clone git://$REPO_GIT/openxt.git
+			git clone git://$REPO_GIT/openxt.git -b $REPO_BRANCH
 		fi
 	done
 fi
 if [ ! -d "openxt" ];
 then
-	git clone file:///home/build/builder/build/git/openxt.git
+    echo git clone file:///home/build/builder/build/git/openxt.git
+	git clone file:///home/build/builder/build/git/openxt.git -b $BRANCH
 fi
 IFS=$OIFS
 
@@ -63,12 +66,13 @@ cd build
 #Extra case for openxt override
 setup_oxt
 cd openxt
-git checkout $BRANCH
 cp -r ../../certs .
 mv /tmp/git_heads_$BUILDID git_heads
 cp example-config .config
 cat <<EOF >> .config
 NAME_SITE="ext"
+OPENXT_MIRROR="http://buildmaster/mirror"
+OE_TARBALL_MIRROR="http://buildmaster/mirror"
 OPENXT_GIT_MIRROR="/home/build/builder/build/git"
 OPENXT_GIT_PROTOCOL="file"
 REPO_PROD_CACERT="/home/build/builder/build/certs/prod-cacert.pem"
@@ -78,7 +82,7 @@ REPO_DEV_SIGNING_KEY="/home/build/builder/build/certs/dev-cakey.pem"
 WIN_BUILD_OUTPUT="buildbot@192.168.0.10:/home/build/win"
 SYNC_CACHE_OE=192.168.0.10:/home/build/oe
 BUILD_RSYNC_DESTINATION=127.0.0.1:/home/storage/builds
-#NETBOOT_HTTP_URL="Replace me"
+NETBOOT_HTTP_URL=http://192.99.200.146:81/builds
 BRANCH=$BRANCH
 EOF
 setup_oe
