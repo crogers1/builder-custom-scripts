@@ -64,11 +64,14 @@ IFS=$OIFS
 
 umask 0022
 #It is against policy to set both $ISSUE and $OVERRIDES in the buildbot ui
-if [[ $ISSUE != 'None' && $OVERRIDES == 'None' ]]; then
-    OVERRIDES=$( ./build_for_issue.sh $ISSUE )
-else
+if [[ $ISSUE != 'None' && $OVERRIDES != 'None' ]]; then
     echo "Cannot pass both a Jira ticket and custom repository overrides to build from."
     exit -1
+elif [[ $ISSUE != 'None' && $OVERRIDES == 'None' ]]; then
+    echo "Building from Jira Issue."
+    OVERRIDES=$( ./build_for_issue.sh $ISSUE )
+else
+    echo "Not building from Jira Issue."
 fi
 cd build
 #Extra case for openxt override

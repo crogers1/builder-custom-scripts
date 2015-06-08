@@ -21,7 +21,14 @@ function do_overrides () {
 		short_nm="${short_nm%.*}" #Strip ".bb"
 		if [ $short_nm == "dm-agent" ] || [ $short_nm == "dm-wrapper" ];
    		then 
-        	echo "SRCREV_pn-$short_nm-stubdom=\"$srcrev\"" >> build/conf/local.conf;
+        		echo "SRCREV_pn-$short_nm-stubdom=\"$srcrev\"" >> build/conf/local.conf;
+	  	fi  
+		if [ $short_nm == "xenclient-rpcgen" ];
+   		then 
+	        	echo "SRCREV_pn-$short_nm-native=\"$srcrev\"" >> build/conf/local.conf;
+        	    	echo "OPENXT_GIT_MIRROR_pn-$short_nm-native=\"$gitr\"" >> build/conf/local.conf
+			echo "OPENXT_GIT_PROTOCOL_pn-$short_nm-native=\"git\"" >> build/conf/local.conf
+			echo "OPENXT_BRANCH_pn-$short_nm-native=\"$branch\"" >> build/conf/local.conf
 	    fi  
         #We've cloned into xenclient-oe already.
     	if [ ! $name == "xenclient-oe" ];
