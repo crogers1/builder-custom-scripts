@@ -6,60 +6,22 @@ LAYERS=$3
 OVERRIDES=$4
 ISSUE=$5
 
-function setup_oe() {
-
-OIFS=$IFS
-IFS=','
-if [[ ! $OVERRIDES == "None" ]];
-then
-	for pair in $OVERRIDES;
-	do
-		REPO_NAME=`echo $pair | cut -f 1 -d ':'`
-		REPO_GIT=`echo $pair | cut -f 2 -d ':'`
-		REPO_BRANCH=`echo $pair | cut -f 3 -d ':'`
-		if [[ $REPO_NAME == "xenclient-oe" ]];
-		then
-			echo "Overrwriting for xenclient-oe"
-cat <<EOF >> build/local.settings
-META_SELINUX_REPO=file:///home/build/builder/build/git/meta-selinux.git
-EXTRA_REPO=file:///home/build/builder/build/git/xenclient-oe-extra.git
-EXTRA_DIR=extra
-EXTRA_TAG="master"
-XENCLIENT_REPO=git://$REPO_GIT/xenclient-oe.git
-XENCLIENT_TAG="$REPO_BRANCH"
-EOF
-		fi
-	done
-fi
-IFS=$OIFS
-}
-
-
-function setup_oxt() {
-
-OIFS=$IFS
-IFS=','
-
-if [[ ! $OVERRIDES == "None" ]];
-then
-	for pair in $OVERRIDES;
-	do
-		REPO_NAME=`echo $pair | cut -f 1 -d ':'`
-		REPO_GIT=`echo $pair | cut -f 2 -d ':'`
-		REPO_BRANCH=`echo $pair | cut -f 3 -d ':'`
-		if [[ $REPO_NAME == "openxt" ]];
-		then
-			git clone git://$REPO_GIT/openxt.git -b $REPO_BRANCH
-		fi
-	done
-fi
-if [ ! -d "openxt" ];
-then
-    echo git clone file:///home/build/builder/build/git/openxt.git
-	git clone file:///home/build/builder/build/git/openxt.git -b $BRANCH
-fi
-IFS=$OIFS
-
+do_overrides () {
+    for trip in $OVERRIDES; do
+        name=$(echo $trip | cut -f 1 -d ':')
+        git=$(echo $trip | cut -f 2 -d ':')
+        branch=$(echo $trip | cut -f 3 -d ':')
+        
+        rm -rf git/$name.git
+        git clone --mirror git://$git/$name git/$name.git
+        #Copyright (c) Jed
+        pushd git/$name.git
+        git branch tmp
+        git symbolic-ref HEAD refs/heads/tmp
+        git branch -m master originalmaster
+        git branch master $branch
+        popd
+    done
 }
 
 umask 0022
@@ -70,9 +32,13 @@ else
     echo "Cannot pass both a Jira ticket and custom repository overrides to build from."
     exit -1
 fi
+OFS=$IFS
+IFS=','
+do_overrides
+IFS=$OFS
 cd build
 #Extra case for openxt override
-setup_oxt
+git clone /home/build/builder/build/git/openxt.git
 cd openxt
 cp -r ../../certs .
 mv /tmp/git_heads_$BUILDID git_heads
@@ -93,12 +59,10 @@ BUILD_RSYNC_DESTINATION=127.0.0.1:/home/storage/builds
 NETBOOT_HTTP_URL=http://192.99.200.146:81/builds
 BRANCH=$BRANCH
 EOF
-setup_oe
 ./do_build.sh -i $BUILDID -s setupoe,sync_cache
 if [[ $LAYERS != 'None' ]]; then
 	../../engage_layers.sh $LAYERS
 fi
-../../engage_srcrevs.sh $BRANCH $OVERRIDES
 ./do_build.sh -i $BUILDID | tee build.log
 ret=${PIPESTATUS[0]}
 cd -
